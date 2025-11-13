@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # Servicio de aplicación Python Flask
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flask_app
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=mysql
+      - DB_NAME=miapp_db
+      - DB_USER=usuario
+      - DB_PASSWORD=password123
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes:
+      - ./src:/app
+    restart: unless-stopped
+
+  # Servicio de base de datos MySQL
+  mysql:
+    image: mysql:8.0
+    container_name: mysql_db
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=miapp_db
+      - MYSQL_USER=usuario
+      - MYSQL_PASSWORD=password123
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local
